@@ -64,8 +64,14 @@ double Simulation::calculate_energy() const {
 // Реализация метода update_positions класса Simulation
 void Simulation::update_positions() {
     double W = 1, W0 = 0;
+    double step_multiplier = 1.0;  // начальный множитель шага
+    const double step_decrement = 0.5;  // множитель, на который уменьшается шаг при отсутствии изменений
+    bool positions_updated;  // флаг для проверки, изменились ли позиции частиц
+
     while (std::abs(W - W0) > 1e-6) {
         W0 = calculate_energy();
+        positions_updated = false;
+
         for (size_t i = 0; i < charges.size(); ++i) {
             std::array<double, 3> resultant_force = { 0.0, 0.0, 0.0 };
             for (size_t j = 0; j < charges.size(); ++j) {
@@ -77,9 +83,12 @@ void Simulation::update_positions() {
                 }
             }
 
-            // Обновление позиции на основе силы
+            // Сохраняем текущие координаты для проверки
+            auto previous_position = charges[i].position;
+
+            // Обновление позиции на основе силы и множителя
             for (int k = 0; k < 3; ++k) {
-                charges[i].position[k] += resultant_force[k];
+                charges[i].position[k] += step_multiplier * resultant_force[k];
             }
 
             // Нормализация позиции
@@ -91,12 +100,27 @@ void Simulation::update_positions() {
             for (int k = 0; k < 3; ++k) {
                 charges[i].position[k] = (charges[i].position[k] / r) * R;
             }
+
+            // Проверяем, уменьшилась ли энергия после сдвига
+            double new_energy = calculate_energy();
+            if (new_energy < W0) {
+                positions_updated = true;  // Позиция частицы обновлена
+            } else {
+                // Если энергия не уменьшилась, возвращаем частицу на предыдущую позицию
+                charges[i].position = previous_position;
+            }
         }
+
+        // Если ни одна частица не сдвинулась, уменьшаем множитель шага
+        if (!positions_updated) {
+            step_multiplier *= step_decrement;
+        }
+
         W = calculate_energy();
     }
 }
-
 // Реализация метода print_positions класса Simulation
+
 void Simulation::print_positions() const {
     for (const auto& charge : charges) {
         std::cout << "Position: ("
