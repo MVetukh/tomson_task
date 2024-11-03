@@ -1,18 +1,19 @@
 #include "Calculate/calculate_classes.h"
 #include "Renderer/Renderer.h"
 #include <iostream>
+#include <chrono>
 
 
 
 int main() {
     int n;
-    std::cout << "Введите число точек на сфере: ";
+    std::cout << "Enter number of points: ";
     std::cin >> n;
+
+    auto start = std::chrono::high_resolution_clock::now();
 
     Simulation sim(n);
     sim.update_positions();
-
-    
 
     Renderer renderer;
     if (!renderer.init(800, 600, "Charges Simulation")) {
@@ -28,6 +29,13 @@ int main() {
 
     // Запуск рендеринга
     renderer.render(points);
+
+    // Окончание измерения времени
+    auto end = std::chrono::high_resolution_clock::now();
+
+    // Вычисление времени выполнения
+    std::chrono::duration<double> duration = end - start;
+    std::cout << "Runtime: " << duration.count() << " seconds\n";
 
     return 0;
 }
